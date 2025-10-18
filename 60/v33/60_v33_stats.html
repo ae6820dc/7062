@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>60! v33 — Observer Stats</title>
+<style>
+
+  :root{--bg:#0f1420;--tile-on:#3ec7c2;--tile-off:#2a3550;--ink:#e8eef8;--muted:#9fb3c8;--digit-ink:#e7f0ff;--ring:#ffd16688;}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  h1{font-size:18px;margin:10px 0 8px}
+  .wrap{display:flex;flex-direction:column;align-items:center}
+  .hud{width:100%;max-width:980px;box-sizing:border-box;padding:0 8px;color:var(--muted);font-size:14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  canvas{display:block}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0 14px}
+  button{padding:10px 14px;border:0;border-radius:12px;background:#2a3550;color:var(--digit-ink);font-weight:700}
+  button.btn-on{background:var(--tile-on);color:#0a1320}
+  input[type=text],input[type=url]{background:#151d30;color:var(--ink);border:1px solid #2b3b61;border-radius:10px;padding:8px 10px;min-width:260px}
+  .note{color:var(--muted);font-size:12px}
+  .card{background:#141c2d;border:1px solid #23314e;border-radius:14px;padding:12px;margin:8px 0;max-width:980px}
+
+table{width:100%;border-collapse:collapse}
+th,td{border-bottom:1px solid #23314e;padding:8px 10px;text-align:left}
+.kpi{display:flex;gap:10px;flex-wrap:wrap}
+.kpi .card{flex:1 1 240px}
+.badge{display:inline-block;background:#1f2a46;border:1px solid #2b3b61;color:#e8eef8;border-radius:999px;padding:2px 10px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>60! v33 — Observer Stats</h1>
+  <div class="hud">
+    <div class="kpi">
+      <div class="card"><strong>Össz-heat:</strong> <span id="k_heat">0</span></div>
+      <div class="card"><strong>Aktív N-maszk:</strong> <span id="k_mask">0000</span></div>
+      <div class="card"><strong>Mentett boardok:</strong> <span id="k_boards">16</span></div>
+    </div>
+    <div class="card">
+      <button id="refresh">Frissítés</button>
+      <button id="resetHeat">Heat reset</button>
+      <span class="badge">localStorage → v33</span>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Index</th><th>ON cellák</th><th>Boards-számláló</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+(()=>{
+  const COLS=6, ROWS=10;
+  const STORAGE_KEY=`v33_en_binmask_${COLS}x${ROWS}_combo16`; const HEAT_KEY=`v33_observer_heat_${COLS}x${ROWS}`;
+  const k_heat=document.getElementById('k_heat'), k_mask=document.getElementById('k_mask'), k_boards=document.getElementById('k_boards');
+  const rows=document.getElementById('rows');
+  function bin4(n){return n.toString(2).padStart(4,'0');}
+  function totalHeat(h){let s=0; for(const row of h) for(const v of row) s+=v|0; return s;}
+  function countOn(m){let s=0; for(const row of m) for(const v of row) if(v) s++; return s;}
+  function render(){
+    rows.innerHTML='';
+    try{const st=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); const heat=JSON.parse(localStorage.getItem(HEAT_KEY)||'[]');
+      const boards=st.boardsState||[]; const mask=st.activeButtons?((st.activeButtons[0]?1:0)|(st.activeButtons[1]?2:0)|(st.activeButtons[2]?4:0)|(st.activeButtons[3]?8:0)):0;
+      k_mask.textContent=bin4(mask); k_boards.textContent=boards.length||16; k_heat.textContent=Array.isArray(heat)&&heat.length? totalHeat(heat):0;
+      boards.forEach((b,i)=>{const tr=document.createElement('tr'); const on=b&&b.matrix?countOn(b.matrix):0; tr.innerHTML=`<td>${i}</td><td>${on}</td><td>${b&&b.boards?b.boards:'0'}</td>`; rows.appendChild(tr); });
+    }catch(e){rows.innerHTML='<tr><td colspan="3">Nincs v33 állapot a böngészőben.</td></tr>';}
+  }
+  document.getElementById('refresh').onclick=render;
+  document.getElementById('resetHeat').onclick=()=>{localStorage.removeItem(HEAT_KEY); render(); alert('Heat resetelve.');};
+  render();
+})();
+</script>
+</body>
+</html>
